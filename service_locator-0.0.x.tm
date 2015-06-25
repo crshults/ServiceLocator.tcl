@@ -1,4 +1,4 @@
-package provide service_locator 0.0.3
+package provide service_locator 0.0.4
 
 package require udp
 package require TclOO
@@ -28,7 +28,7 @@ oo::class create service_locator {
 
 	method handle_received_message {} {
 		set message [chan read $_port]
-        if {[string first "service location $_name" $message] ne -1} {
+        if {[string compare "service location $_name" [lrange $message 0 2]] eq 0} {
             set address  [lindex [chan configure $_port -peer] 0]
             set port [lindex $message end]
             catch {{*}$_service_located_callback [list $address $port]}
