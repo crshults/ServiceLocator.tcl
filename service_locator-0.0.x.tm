@@ -1,12 +1,13 @@
+package provide service_locator 0.0.3
+
 package require udp
 package require TclOO
 
 oo::class create service_locator {
 
-    variable _port _name _service_located_callback
+    variable _port _name _service_located_callback _scheduled_retry
 
     constructor {} {
-        puts {service_locator::constructor}
         set _port [udp_open 15353 reuse]
         set _name unknown
         set _service_located_callback {}
@@ -22,25 +23,24 @@ oo::class create service_locator {
     }
 
     destructor {
-        puts {service_locator::destructor}
         catch {chan close $_port}
     }
 
 	method handle_received_message {} {
-        puts {service_locator::handle_received_message}
 		set message [chan read $_port]
         if {[string first "service location $_name" $message] ne -1} {
             set address  [lindex [chan configure $_port -peer] 0]
             set port [lindex $message end]
             catch {{*}$_service_located_callback [list $address $port]}
+            after cancel $_scheduled_retry
         }
     }
 
     method find {name callback} {
-        puts {service_locator::find}
         set _name $name
         set _service_located_callback $callback
         chan puts -nonewline $_port "service find $name"
+        set _scheduled_retry [after 1000 [list [self] find $name $callback]]
     }
 
 }
