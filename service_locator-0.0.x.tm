@@ -1,4 +1,4 @@
-package provide service_locator 0.0.5
+package provide service_locator 0.0.6
 
 package require udp
 package require TclOO
@@ -13,12 +13,22 @@ oo::class create service_locator {
         set _service_located_callback {}
         set _finding no
 
-        chan configure $_port           \
-            -blocking  0                \
-            -buffering none             \
-            -mcastadd  {224.0.0.251}    \
-            -mcastloop 1                \
-            -remote    {224.0.0.251 15353}
+        if {
+            [catch {
+                chan configure $_port        \
+                    -blocking  0             \
+                    -buffering none          \
+                    -mcastadd  {224.0.0.251} \
+                    -mcastloop 1             \
+                    -remote    {224.0.0.251 15353}
+            }]
+        } {
+            chan configure $_port \
+                -blocking  0      \
+                -buffering none   \
+                -broadcast 1      \
+                -remote    {127.255.255.255 15353}
+        }
 
         chan event $_port readable [list [self] handle_received_message]
     }
